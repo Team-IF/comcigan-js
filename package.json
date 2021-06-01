@@ -6,6 +6,14 @@
   "repository": "https://github.com/Team-IF/comcigan-js",
   "author": "Team IF <postmaster@teamif.io>",
   "license": "LGPL-3.0-or-later",
+  "dependencies": {
+    "axios": "^0.21.1",
+    "iconv-lite": "^0.6.3",
+    "node-html-parser": "^3.3.4"
+  },
+  "scripts": {
+    "tsc": "tsc"
+  },
   "devDependencies": {
     "typescript": "^4.3.2"
   }
