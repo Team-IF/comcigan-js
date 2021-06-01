@@ -118,3 +118,7 @@ dist
 !.yarn/releases
 !.yarn/sdks
 !.yarn/versions
+
+# test
+test.*
+test/*

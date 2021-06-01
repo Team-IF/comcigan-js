@@ -12,8 +12,6 @@
     "node-html-parser": "^3.3.4"
   },
   "scripts": {
-    "start": "yarn run serve",
-    "serve": "ts-node src/index.ts",
     "tsc": "tsc"
   },
   "devDependencies": {
