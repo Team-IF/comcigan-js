@@ -1,0 +1,12 @@
+{
+  "name": "comcigan",
+  "version": "1.0.0",
+  "description": "A parser for comcigan made of TypeScript.",
+  "main": "dist/index.js",
+  "repository": "https://github.com/Team-IF/comcigan-js",
+  "author": "Team IF <postmaster@teamif.io>",
+  "license": "LGPL-3.0-or-later",
+  "devDependencies": {
+    "typescript": "^4.3.2"
+  }
+}
