@@ -4,22 +4,9 @@ import { encode, decode } from "iconv-lite";
 
 import regex from "./regex";
 
+import { WeekData } from "./types/timetable";
+import { SchoolOptions, SchoolPayload } from "./types/school";
 
-interface SchoolOptions {
-    initialize?: boolean,
-    fetchRequestInfo?: boolean,
-    getSchoolInfo?: boolean
-}
-
-interface WeekData {
-
-}
-
-interface SchoolPayload {
-    region: string,
-    name: string,
-    sccode: number
-}
 
 class School {
     name?: string = undefined;
@@ -27,16 +14,17 @@ class School {
     region?: string = undefined;
 
     URL: string = "http://112.186.146.81:4082";
-    baseURL?: string = undefined;
-    searchURL?: string = undefined;
+    baseURL: string = "";
+    searchURL: string = "";
+    timeURL: string = "";
 
     orgNum?: number = undefined;
     dayNum?: number = undefined;
     thNum?: number = undefined;
     sbNum?: number = undefined;
+    prefix?: string = undefined;
 
-    private timeURL?: string = undefined;
-    private weekData?: WeekData = undefined;
+    weekData?: WeekData = undefined;
 
     constructor (name: string | undefined = undefined, options: SchoolOptions = {}) {
         this.name = name;
@@ -51,20 +39,23 @@ class School {
 
         if (!(options.fetchRequestInfo ?? true))
             return;
+        await this.fetchRequestInfo();
 
-        await this.fetchRequestInfo()
         if (options.getSchoolInfo ?? true) {
             const scInfo = await this.getSchoolInfo(this.name!);
 
             this.name = scInfo.name;
             this.region = scInfo.region;
             this.sccode = scInfo.sccode;
+            this.timeURL = encodeURI(`${this.baseURL}?${btoa(`${this.prefix}${this.sccode.toString()}_0_1`)}`);
         }
 
-        this.timeURL, this.weekData;
+        if (options.refresh ?? true) {
+            await this.refresh()
+        }
     }
 
-    async fetchRequestInfo () {
+    async fetchRequestInfo (): Promise<void> {
         const res = await axios.get(`${this.URL}/st`, { responseType: "arraybuffer" });
         const script = parse(decode(res.data, "EUC-KR")).querySelectorAll("script")[1]!.innerHTML;
 
@@ -76,12 +67,12 @@ class School {
         this.dayNum = parseInt(regex.daydata.exec(script)?.toString()!);
         this.thNum = parseInt(regex.thname.exec(script)?.toString()!);
         this.sbNum = parseInt(regex.sbname.exec(script)?.toString()!);
+        this.prefix = regex.prefix.exec(script)![0]?.slice(1, -1);
     }
 
     async getSchoolInfo (name: string): Promise<SchoolPayload> {
         const res = await axios.get(this.searchURL! + [...encode(name, "EUC-KR")].map((b) => `%${b.toString(16)}`).join("").toUpperCase(), { responseType: "arraybuffer" });
-        console.log(typeof(res.data.toString('UTF-8')))
-        const scList = JSON.parse(res.data.toString('UTF-8').replace(/\0+$/, ""))["학교검색"];
+        const scList = JSON.parse(res.data.toString().replace(/\0+$/, ""))["학교검색"];
 
         if (scList.length == 1) {
             const sc = scList[0];
@@ -97,6 +88,32 @@ class School {
         else {
             throw new Error("No schools have been searched by the name passed.")
         }
+    }
+
+    async refresh (): Promise<WeekData> {
+        const res = await axios.get(this.timeURL);
+        const timeTableJSON = JSON.parse(res.data.toString().replace(/\0+$/, ""));
+
+        const subjects = timeTableJSON[`자료${this.sbNum}`];
+        const longSubjects = timeTableJSON[`긴자료${this.sbNum}`];
+        const teachers = timeTableJSON[`자료${this.thNum}`];
+
+        this.weekData = (timeTableJSON[`자료${this.dayNum}`] as Array<Array<Array<Array<number>>>>)
+            .map(grade => grade
+                .map(_class => _class.slice(0, 6)
+                    .map(day => day.filter(x => x && x.toString().slice(0, -2))
+                        .map(x => {
+                            return {
+                                name: subjects[parseInt(x.toString().slice(-2))],
+                                longName: longSubjects[parseInt(x.toString().slice(-2))],
+                                teacher: parseInt(x.toString().slice(0, -2)) >= teachers.length ? "" : teachers[parseInt(x.toString().slice(0, -2))]
+                            }
+                        }
+                    )
+                )
+            )
+        );
+        return this.weekData;
     }
 }
 
