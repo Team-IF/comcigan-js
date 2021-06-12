@@ -4,7 +4,10 @@ import { encode, decode } from "iconv-lite";
 
 import regex from "./regex";
 
-import { WeekData } from "./types/timetable";
+import Class from "./class";
+import Day from "./day";
+
+import { PeroidData, WeekData } from "./types/timetable";
 import { SchoolOptions, SchoolPayload } from "./types/school";
 
 
@@ -99,21 +102,33 @@ class School {
         const teachers = timeTableJSON[`자료${this.thNum}`];
 
         this.weekData = (timeTableJSON[`자료${this.dayNum}`] as Array<Array<Array<Array<number>>>>)
-            .map(grade => grade
-                .map(_class => _class.slice(0, 6)
-                    .map(day => day.filter(x => x && x.toString().slice(0, -2))
+            .map((grade, gradeIndex) => grade
+                .map((_class, classIndex) => new Class(gradeIndex, classIndex, _class.slice(0, 6)
+                    .map(day => new Day(day.filter(x => x && x.toString().slice(0, -2))
                         .map(x => {
                             return {
                                 name: subjects[parseInt(x.toString().slice(-2))],
                                 longName: longSubjects[parseInt(x.toString().slice(-2))],
                                 teacher: parseInt(x.toString().slice(0, -2)) >= teachers.length ? "" : teachers[parseInt(x.toString().slice(0, -2))]
                             }
-                        }
-                    )
-                )
-            )
-        );
+                        })
+                    ))
+                ))
+            );
+
         return this.weekData;
+    }
+
+    getClass (grade: number, classNum: number): Class {
+        return this.weekData![grade]![classNum]!;
+    }
+
+    getDay (grade: number, classNum: number, day: number): Day {
+        return this.getClass(grade, classNum).getDay(day);
+    }
+
+    getPeriod (grade: number, classNum: number, day: number, period: number): PeroidData {
+        return this.getDay(grade, classNum, day).getPeriod(period);
     }
 }
 

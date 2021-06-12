@@ -1,4 +1,6 @@
-export type WeekData = Array<Array<Array<Array<PeroidData>>>>;
+import Class from "../class";
+
+export type WeekData = Array<Array<Class>>;
 
 export interface PeroidData {
     name: string,
