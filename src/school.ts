@@ -28,6 +28,7 @@ class School {
     prefix?: string = undefined;
 
     weekData?: WeekData = undefined;
+    [k: number]: Array<Class>;
 
     constructor (name: string | undefined = undefined, options: SchoolOptions = {}) {
         this.name = name;
@@ -115,6 +116,10 @@ class School {
                     ))
                 ))
             );
+
+        for (const i in this.weekData) {
+            this[i] = this.weekData[i]!;
+        }
 
         return this.weekData;
     }
